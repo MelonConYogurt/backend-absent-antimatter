@@ -174,3 +174,27 @@ class Crud:
                     return Response(success=False, error="No se encontraron usuarios")
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
+
+    def change_user_active_state(self, data: UserResponse):
+        try:
+            user_exist = self.find_user_by_id(id=data.id)
+            if not user_exist.success:
+                return Response(success=False)
+            else:
+                with self.Connection.conn() as conn:
+                    with conn.cursor() as cur:
+                        query = "UPDATE public.users set active = %s WHERE id = %s "
+                        cur.execute(query, (not data.active, data.id))
+                        return Response(
+                            data=UserResponse(
+                                id=data.id,
+                                name=user_exist.data[1],
+                                phone_number=user_exist.data[2],
+                                email=user_exist.data[3],
+                                active=not data.active,
+                            ),
+                            success=True,
+                        )
+
+        except psycopg2.Error as e:
+            return Response(success=False, error=str(e))

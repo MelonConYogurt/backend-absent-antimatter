@@ -4,6 +4,7 @@ from api.models.users.user import (
     UserUpdate,
     UserSearch,
     UserDelete,
+    UserResponse,
 )
 from database.users.crud import Crud
 from models.response_model import Response
@@ -75,6 +76,18 @@ async def update_user(user_data: UserUpdate):
     try:
         db = Crud()
         response = db.update_user(data=user_data)
+        if not response.success:
+            raise HTTPException(status_code=400, detail=response.error)
+        return response
+    except Exception as e:
+        return Response(success=False, error=str(e))
+
+
+@router_users.patch("/users/change/state/")
+async def change_active_state(user_data: UserResponse):
+    try:
+        db = Crud()
+        response = db.change_user_active_state(data=user_data)
         if not response.success:
             raise HTTPException(status_code=400, detail=response.error)
         return response

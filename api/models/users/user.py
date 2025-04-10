@@ -20,3 +20,7 @@ class UserSearch(BaseModel):
 
 class UserDelete(BaseModel):
     id: int
+
+
+class UserResponse(UserUpdate):
+    active: bool
