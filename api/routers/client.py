@@ -29,7 +29,7 @@ async def toggle_client_active(id: int):
         return Response(error=str(e))
 
 
-@router_clients.get("/clients/create/fake/")
+@router_clients.post("/clients/create/fake/")
 async def create_clients():
     try:
         db = Crud()

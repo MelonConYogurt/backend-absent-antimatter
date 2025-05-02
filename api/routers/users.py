@@ -90,7 +90,7 @@ async def change_active_state(user_data: UserResponse):
         return Response(success=False, error=str(e))
 
 
-@router_users.get("/create/fake/users/")
+@router_users.post("/create/fake/users/")
 async def create_fake_users():
     try:
         db = Crud()
