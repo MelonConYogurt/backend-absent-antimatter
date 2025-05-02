@@ -1,4 +1,4 @@
-from database.conection import Connection
+from database.connection import Connection
 from models.response_model import Response, Metadata
 from models.client_model import BaseClient
 from faker import Faker
@@ -8,11 +8,11 @@ import psycopg2
 
 class Crud:
     def __init__(self):
-        self.conection = Connection()
+        self.connection = Connection()
 
     def count_total_clients(self):
         try:
-            with self.conection.conn() as conn:
+            with self.connection.conn() as conn:
                 with conn.cursor() as cur:
                     query = "SELECT COUNT(*) FROM public.clients"
                     cur.execute(query)
@@ -22,7 +22,7 @@ class Crud:
             return 0
 
     def find_client(self, id: int):
-        with self.conection.conn() as conn:
+        with self.connection.conn() as conn:
             with conn.cursor() as cur:
                 query = "SELECT * FROM public.clients WHERE id = %s"
                 cur.execute(query, (id,))
@@ -44,7 +44,7 @@ class Crud:
                     success=False, error="El offset debe ser mayor o igual a cero"
                 )
 
-            with self.conection.conn() as conn:
+            with self.connection.conn() as conn:
                 with conn.cursor() as cur:
 
                     if search_value is None:
@@ -92,7 +92,7 @@ class Crud:
 
     def delete_client(self, id: int):
         try:
-            with self.conection.conn() as conn:
+            with self.connection.conn() as conn:
                 with conn.cursor() as cur:
                     validation = self.find_client(id=id)
                     if not validation.success:
@@ -122,7 +122,7 @@ class Crud:
             fake = Faker()
             fake.add_provider(E164Provider)
 
-            with self.conection.conn() as conn:
+            with self.connection.conn() as conn:
                 with conn.cursor() as cur:
                     for _ in range(40):
                         name = fake.name()

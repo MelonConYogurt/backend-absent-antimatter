@@ -19,7 +19,6 @@ async def search_users(
     offset: int = 0,
     limit: int = 100,
 ):
-    """Buscar usuarios según criterios"""
     try:
 
         db = Crud()
@@ -41,7 +40,6 @@ async def search_users(
 
 @router_users.post("/users/")
 async def create_user(user_data: UserBase):
-    """Crear un nuevo usuario"""
     try:
         db = Crud()
         response = db.create_user(data=user_data)
@@ -54,7 +52,6 @@ async def create_user(user_data: UserBase):
 
 @router_users.delete("/users/delete/")
 async def delete_user(user_id: int):
-    """Eliminar un usuario por su ID"""
     try:
         db = Crud()
         response = db.delete_user(data=UserDelete(id=user_id))
@@ -67,7 +64,6 @@ async def delete_user(user_id: int):
 
 @router_users.put("/users/update/")
 async def update_user(user_data: UserUpdate):
-    """Actualizar un usuario existente por su ID"""
     try:
         db = Crud()
         response = db.update_user(data=user_data)

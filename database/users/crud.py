@@ -1,4 +1,4 @@
-from database.conection import Connection
+from database.connection import Connection
 from models.user_model import (
     UserBase,
     UserResponse,
