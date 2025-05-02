@@ -13,14 +13,30 @@ from models.response_model import Response
 router_users = APIRouter(tags=["Users"])
 
 
-@router_users.get("/users/")
-async def get_users(offset: int = 0, limit: int = 100):
-    """Listar todos los usuarios"""
-    db = Crud()
-    response = db.list_user(offset=offset, limit=limit)
-    if not response.success:
-        raise HTTPException(status_code=400, detail=response.error)
-    return response
+@router_users.get("/users/search/")
+async def search_users(
+    search: str | None = None,
+    offset: int = 0,
+    limit: int = 100,
+):
+    """Buscar usuarios según criterios"""
+    try:
+
+        db = Crud()
+        if not search:
+            response = db.list_user(limit=limit, offset=offset)
+            return response
+        else:
+            response = db.search_user(
+                data=UserSearch(search=search),
+                offset=offset,
+                limit=limit,
+            )
+            if not response.success:
+                raise HTTPException(status_code=400, detail=response.error)
+            return response
+    except Exception as e:
+        return Response(success=False, error=str(e))
 
 
 @router_users.post("/users/")
@@ -29,27 +45,6 @@ async def create_user(user_data: UserBase):
     try:
         db = Crud()
         response = db.create_user(data=user_data)
-        if not response.success:
-            raise HTTPException(status_code=400, detail=response.error)
-        return response
-    except Exception as e:
-        return Response(success=False, error=str(e))
-
-
-@router_users.get("/users/search/")
-async def search_users(
-    search: str,
-    offset: int = 0,
-    limit: int = 100,
-):
-    """Buscar usuarios según criterios"""
-    try:
-        db = Crud()
-        response = db.search_user(
-            data=UserSearch(search=search),
-            offset=offset,
-            limit=limit,
-        )
         if not response.success:
             raise HTTPException(status_code=400, detail=response.error)
         return response
@@ -93,3 +88,14 @@ async def change_active_state(user_data: UserResponse):
         return response
     except Exception as e:
         return Response(success=False, error=str(e))
+
+
+@router_users.get("/create/fake/users/")
+async def create_fake_users():
+    try:
+        db = Crud()
+        response = db.create_fake_users()
+        if response:
+            return response
+    except Exception as e:
+        return e

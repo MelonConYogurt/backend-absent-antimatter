@@ -7,6 +7,8 @@ from models.user_model import (
     UserDelete,
 )
 from models.response_model import Response, Metadata
+from faker import Faker
+from faker_e164.providers import E164Provider
 import psycopg2
 
 
@@ -25,11 +27,23 @@ class Crud:
         except psycopg2.Error as e:
             return 0
 
+    def count_total_users_search(self, data: UserSearch):
+        try:
+            with self.Connection.conn() as conn:
+                with conn.cursor() as cur:
+                    query = "SELECT COUNT(*) FROM public.users WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s"
+                    search_pattern = f"%{data.search}%"
+                    cur.execute(query, (search_pattern, search_pattern, search_pattern))
+                    total = cur.fetchone()[0]
+                    return total
+        except psycopg2.Error as e:
+            return 0
+
     def list_user(self, offset: int, limit: int):
         try:
             with self.Connection.conn() as conn:
                 with conn.cursor() as cur:
-                    query = "SELECT * FROM public.users OFFSET %s LIMIT %s"
+                    query = "SELECT * FROM public.users ORDER BY id OFFSET %s LIMIT %s"
                     cur.execute(query, (offset, limit))
                     users_data = cur.fetchall()
                     total_users = self.count_total_users()
@@ -41,6 +55,7 @@ class Crud:
                                 phone_number=user_data[2],
                                 email=user_data[3],
                                 active=bool(user_data[4]),
+                                role=user_data[5] if len(user_data) > 5 else "user",
                             )
                             for user_data in users_data
                         ]
@@ -93,8 +108,10 @@ class Crud:
             if not user_exist.data:
                 with self.Connection.conn() as conn:
                     with conn.cursor() as cur:
-                        query = "INSERT INTO public.users (name, email, phone_number) VALUES(%s, %s, %s)"
-                        cur.execute(query, (data.name, data.email, data.phone_number))
+                        query = "INSERT INTO public.users (name, email, phone_number, role) VALUES(%s, %s, %s, %s)"
+                        cur.execute(
+                            query, (data.name, data.email, data.phone_number, data.role)
+                        )
                         return Response(data=data, success=True)
             return Response(success=False, error="Usuario ya existe")
         except psycopg2.Error as e:
@@ -112,13 +129,14 @@ class Crud:
             elif not new_user_exist.success:
                 with self.Connection.conn() as conn:
                     with conn.cursor() as cur:
-                        query = "UPDATE public.users set name=%s, phone_number=%s, email=%s WHERE id =%s"
+                        query = "UPDATE public.users set name=%s, phone_number=%s, email=%s, role=%s WHERE id =%s"
                         cur.execute(
                             query,
                             (
                                 data.name,
                                 data.phone_number,
                                 data.email,
+                                data.role,
                                 data.id,
                             ),
                         )
@@ -150,7 +168,7 @@ class Crud:
 
     def search_user(self, data: UserSearch, offset: int, limit: int):
         try:
-            query = "SELECT * FROM public.users WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s LIMIT %s OFFSET %s"
+            query = "SELECT * FROM public.users WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s ORDER BY id LIMIT %s OFFSET %s"
             search_pattern = f"%{data.search}%"
             with self.Connection.conn() as conn:
                 with conn.cursor() as cur:
@@ -160,6 +178,8 @@ class Crud:
                     )
                     result_data = cur.fetchall()
                     if result_data:
+                        total_users = self.count_total_users_search(data=data)
+                        page = offset / limit
                         users = [
                             UserResponse(
                                 id=int(element[0]),
@@ -167,10 +187,16 @@ class Crud:
                                 phone_number=element[2],
                                 email=element[3],
                                 active=bool(element[4]),
+                                role=element[5] if len(element) > 5 else "user",
                             )
                             for element in result_data
                         ]
-                        return Response(success=True, data=users)
+
+                        return Response(
+                            success=True,
+                            data=users,
+                            metadata=Metadata(page=page, size=limit, total=total_users),
+                        )
                     return Response(success=False, error="No se encontraron usuarios")
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
@@ -192,9 +218,34 @@ class Crud:
                                 phone_number=user_exist.data[2],
                                 email=user_exist.data[3],
                                 active=not data.active,
+                                role=(
+                                    user_exist.data[5]
+                                    if len(user_exist.data) > 5
+                                    else "user"
+                                ),
                             ),
                             success=True,
                         )
 
         except psycopg2.Error as e:
+            return Response(success=False, error=str(e))
+
+    def create_fake_users(self):
+        try:
+            fake = Faker()
+            fake.add_provider(E164Provider)
+
+            with self.Connection.conn() as conn:
+                with conn.cursor() as cur:
+                    for _ in range(40):
+                        name = fake.name()
+                        email = fake.email()
+                        phone_number = fake.e164()
+                        role = fake.job()
+
+                        query = "INSERT INTO public.users (name, phone_number, email, active, role) VALUES (%s, %s, %s, %s, %s)"
+                        cur.execute(query, (name, phone_number, email, True, role))
+                        print("Creado con exito")
+
+        except Exception as e:
             return Response(success=False, error=str(e))

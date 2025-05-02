@@ -5,6 +5,7 @@ class UserBase(BaseModel):
     name: str
     email: str
     phone_number: str
+    role: str = "user"
 
 
 class UserUpdate(BaseModel):
