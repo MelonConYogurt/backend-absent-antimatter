@@ -10,8 +10,8 @@ async def search_suppliers():
     try:
         db = Crud()
         response = db.search_supplier()
-        if response.success:  # Corregido: succes -> success
-            return response  # Devolver los datos completos
+        if response.success:
+            return response
     except Exception as e:
         return Response(success=False, error=str(e))
 

@@ -113,3 +113,52 @@ class Crud:
 
         except Exception as e:
             return Response(success=False, error=str(e))
+
+    def search_products(
+        self,
+        offset: int,
+        limit: int,
+        order_direction: str | None = "ASC",
+        search_value: str | None = None,
+        column: str | None = "id",
+    ):
+        VALID_COLS = {"name", "stock", "category_id"}
+        VALID_ORDERS = {"ASC", "DESC"}
+
+        column if column in VALID_COLS else "id"
+        order_direction if order_direction in VALID_ORDERS else "ASC"
+
+        order_clause = f"ORDER BY {column} {order_direction}"
+
+        try:
+            with self.connection.conn() as conn:
+                with conn.cursor() as cur:
+                    query = f"""
+                    SELECT *
+                    FROM public.products
+                    WHERE name ILIKE %s OR reference ILIKE %s
+                    {order_clause}
+                    LIMIT %s OFFSET %s
+                    """
+                    like_pattern = f"%{search_value or ''}%"
+                    cur.execute(query, (like_pattern, like_pattern, limit, offset))
+                    rows = cur.fetchall()
+                    return Response(
+                        success=True,
+                        data=[
+                            Product(
+                                id=row[0],
+                                name=row[1],
+                                stock=row[2],
+                                reference=row[3],
+                                category_id=row[4],
+                                price=row[5],
+                                created_at=row[6],
+                                supplier_id=row[7],
+                                active=row[8],
+                            )
+                            for row in rows
+                        ],
+                    )
+        except Exception as e:
+            return Response(success=False, error=str(e))

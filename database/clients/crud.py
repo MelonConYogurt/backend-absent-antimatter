@@ -34,16 +34,6 @@ class Crud:
 
     def search_client(self, limit: int, offset: int, search_value: str | None = None):
         try:
-            if limit <= 0:
-                return Response(
-                    success=False, error="El límite debe ser mayor que cero"
-                )
-
-            if offset < 0:
-                return Response(
-                    success=False, error="El offset debe ser mayor o igual a cero"
-                )
-
             with self.connection.conn() as conn:
                 with conn.cursor() as cur:
 

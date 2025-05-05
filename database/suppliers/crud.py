@@ -51,7 +51,7 @@ class Crud:
             for _ in range(10):
                 supplier = Supplier(
                     name=fake.company(),
-                    phone=fake.e164()
+                    phone=fake.e164(),
                     email=fake.company_email(),
                     address=fake.address(),
                     active=True,
