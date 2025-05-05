@@ -3,7 +3,6 @@ from models.user_model import (
     UserBase,
     UserResponse,
     UserUpdate,
-    UserSearch,
     UserDelete,
 )
 from models.response_model import Response, Metadata
@@ -15,64 +14,6 @@ import psycopg2
 class Crud:
     def __init__(self):
         self.Connection = Connection()
-
-    def count_total_users(self):
-        try:
-            with self.Connection.conn() as conn:
-                with conn.cursor() as cur:
-                    query = "SELECT COUNT(*) FROM public.users"
-                    cur.execute(query)
-                    total = cur.fetchone()[0]
-                    return total
-        except psycopg2.Error as e:
-            return 0
-
-    def count_total_users_search(self, data: UserSearch):
-        try:
-            with self.Connection.conn() as conn:
-                with conn.cursor() as cur:
-                    query = "SELECT COUNT(*) FROM public.users WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s"
-                    search_pattern = f"%{data.search}%"
-                    cur.execute(query, (search_pattern, search_pattern, search_pattern))
-                    total = cur.fetchone()[0]
-                    return total
-        except psycopg2.Error as e:
-            return 0
-
-    def list_user(self, offset: int, limit: int):
-        try:
-            with self.Connection.conn() as conn:
-                with conn.cursor() as cur:
-                    query = "SELECT * FROM public.users ORDER BY id OFFSET %s LIMIT %s"
-                    cur.execute(query, (offset, limit))
-                    users_data = cur.fetchall()
-                    total_users = self.count_total_users()
-                    if users_data:
-                        users = [
-                            UserResponse(
-                                id=int(user_data[0]),
-                                name=user_data[1],
-                                phone_number=user_data[2],
-                                email=user_data[3],
-                                active=bool(user_data[4]),
-                                role=user_data[5] if len(user_data) > 5 else "user",
-                            )
-                            for user_data in users_data
-                        ]
-                        page = offset / limit
-                        return Response(
-                            data=users,
-                            success=True,
-                            metadata=Metadata(page=page, size=limit, total=total_users),
-                        )
-                    else:
-                        return Response(
-                            success=True,
-                            data=[],
-                            metadata=Metadata(page=0, size=limit, total=total_users),
-                        )
-        except psycopg2.Error as e:
-            return Response(error=str(e), success=False)
 
     def find_user_by_id(self, id: int):
         try:
@@ -166,20 +107,39 @@ class Crud:
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
 
-    def search_user(self, data: UserSearch, offset: int, limit: int):
+    def search_user(
+        self, search_value: str | None = None, offset: int = 0, limit: int = 10
+    ):
         try:
-            query = "SELECT * FROM public.users WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s ORDER BY id LIMIT %s OFFSET %s"
-            search_pattern = f"%{data.search}%"
             with self.Connection.conn() as conn:
                 with conn.cursor() as cur:
+                    query = """
+                    SELECT * FROM public.users 
+                    WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s 
+                    ORDER BY id ASC 
+                    LIMIT %s OFFSET %s
+                    """
+                    search_pattern = f"%{search_value or ''}%"
                     cur.execute(
                         query,
                         (search_pattern, search_pattern, search_pattern, limit, offset),
                     )
-                    result_data = cur.fetchall()
-                    if result_data:
-                        total_users = self.count_total_users_search(data=data)
-                        page = offset / limit
+                    data = cur.fetchall()
+                    if data:
+                        total_query = """
+                            SELECT COUNT(*) FROM public.users 
+                            WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s 
+                        """
+                        cur.execute(
+                            total_query,
+                            (
+                                search_pattern,
+                                search_pattern,
+                                search_pattern,
+                            ),
+                        )
+                        total = cur.fetchone()[0]
+                        page = offset // limit + 1
                         users = [
                             UserResponse(
                                 id=int(element[0]),
@@ -187,15 +147,15 @@ class Crud:
                                 phone_number=element[2],
                                 email=element[3],
                                 active=bool(element[4]),
-                                role=element[5] if len(element) > 5 else "user",
+                                role=element[5],
                             )
-                            for element in result_data
+                            for element in data
                         ]
 
                         return Response(
                             success=True,
                             data=users,
-                            metadata=Metadata(page=page, size=limit, total=total_users),
+                            metadata=Metadata(page=page, size=limit, total=total),
                         )
                     return Response(success=False, error="No se encontraron usuarios")
         except psycopg2.Error as e:

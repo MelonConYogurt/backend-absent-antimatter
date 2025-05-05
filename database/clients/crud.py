@@ -37,46 +37,58 @@ class Crud:
             with self.connection.conn() as conn:
                 with conn.cursor() as cur:
 
-                    if search_value is None:
-                        total_filtered = self.count_total_clients()
-                        query = "SELECT * FROM public.clients ORDER BY id LIMIT %s OFFSET %s"
-                        cur.execute(query, (limit, offset))
-                        data = cur.fetchall()
-                    else:
-                        count_query = "SELECT COUNT(*) FROM public.clients WHERE concat_ws(' ', name, phone_number, email) ILIKE %s"
-                        cur.execute(count_query, (f"%{search_value}%",))
-                        total_filtered = cur.fetchone()[0]
+                    total_query = """
+                        SELECT COUNT(*) 
+                        FROM public.clients 
+                        WHERE name ILIKE %s OR phone_number ILIKE %s OR email ILIKE %s
+                    """
+                    cur.execute(
+                        total_query,
+                        (
+                            f"%{search_value or ''}%",
+                            f"%{search_value or ''}%",
+                            f"%{search_value or ''}%",
+                        ),
+                    )
+                    total = cur.fetchone()[0]
 
-                        query = "SELECT * FROM public.clients WHERE concat_ws(' ', name, phone_number, email) ILIKE %s ORDER BY id LIMIT %s OFFSET %s"
-                        cur.execute(
-                            query,
-                            (f"%{search_value}%", limit, offset),
-                        )
-                        data = cur.fetchall()
+                    query = """
+                        SELECT *
+                        FROM public.clients
+                        WHERE name ILIKE  %s OR phone_number ILIKE  %s  OR email ILIKE %s
+                        ORDER BY id ASC
+                        LIMIT %s OFFSET %s
+                    """
+                    cur.execute(
+                        query,
+                        (
+                            f"%{search_value or ''}%",
+                            f"%{search_value or ''}%",
+                            f"%{search_value or ''}%",
+                            limit,
+                            offset,
+                        ),
+                    )
+                    data = cur.fetchall()
 
                     if not data:
                         return Response(success=False, error="No data found.")
                     else:
                         page = offset // limit + 1
-                        clients = [
-                            BaseClient(
-                                id=client_data[0],
-                                name=client_data[1],
-                                phone_number=client_data[2],
-                                email=client_data[3],
-                                active=client_data[4],
-                            )
-                            for client_data in data
-                        ]
-
                         return Response(
-                            data=clients,
+                            data=[
+                                BaseClient(
+                                    id=client_data[0],
+                                    name=client_data[1],
+                                    phone_number=client_data[2],
+                                    email=client_data[3],
+                                    active=client_data[4],
+                                )
+                                for client_data in data
+                            ],
                             success=True,
-                            metadata=Metadata(
-                                total=total_filtered, page=page, size=limit
-                            ),
+                            metadata=Metadata(total=total, page=page, size=limit),
                         )
-
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
 

@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException
 from api.models.users.user import (
     UserBase,
     UserUpdate,
-    UserSearch,
     UserDelete,
     UserResponse,
 )
@@ -20,20 +19,15 @@ async def search_users(
     limit: int = 100,
 ):
     try:
-
         db = Crud()
-        if not search:
-            response = db.list_user(limit=limit, offset=offset)
-            return response
-        else:
-            response = db.search_user(
-                data=UserSearch(search=search),
-                offset=offset,
-                limit=limit,
-            )
-            if not response.success:
-                raise HTTPException(status_code=400, detail=response.error)
-            return response
+        response = db.search_user(
+            search_value=search,
+            offset=offset,
+            limit=limit,
+        )
+        if not response.success:
+            raise HTTPException(status_code=400, detail=response.error)
+        return response
     except Exception as e:
         return Response(success=False, error=str(e))
 

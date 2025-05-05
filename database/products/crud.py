@@ -143,22 +143,40 @@ class Crud:
                     like_pattern = f"%{search_value or ''}%"
                     cur.execute(query, (like_pattern, like_pattern, limit, offset))
                     rows = cur.fetchall()
-                    return Response(
-                        success=True,
-                        data=[
-                            Product(
-                                id=row[0],
-                                name=row[1],
-                                stock=row[2],
-                                reference=row[3],
-                                category_id=row[4],
-                                price=row[5],
-                                created_at=row[6],
-                                supplier_id=row[7],
-                                active=row[8],
-                            )
-                            for row in rows
-                        ],
-                    )
+
+                    if rows:
+                        query_total_rows = f"""
+                        SELECT COUNT(*)
+                        FROM public.products
+                        WHERE name ILIKE %s OR reference ILIKE %s
+                        {order_clause}
+                        LIMIT %s OFFSET %s
+                        """
+                        cur.execute(query_total_rows)
+                        total = cur.fecthone()[0]
+                        page = offset // limit + 1
+
+                        return Response(
+                            success=True,
+                            data=[
+                                Product(
+                                    id=row[0],
+                                    name=row[1],
+                                    stock=row[2],
+                                    reference=row[3],
+                                    category_id=row[4],
+                                    price=row[5],
+                                    created_at=row[6],
+                                    supplier_id=row[7],
+                                    active=row[8],
+                                )
+                                for row in rows
+                            ],
+                            metadata=Metadata(page=page, total=total, size=limit),
+                        )
+                    else:
+                        return Response(
+                            success=False,
+                        )
         except Exception as e:
             return Response(success=False, error=str(e))

@@ -37,14 +37,6 @@ class UserUpdate:
         self.role = role
 
 
-class UserSearch:
-    def __init__(
-        self,
-        search: str | None = None,
-    ):
-        self.search = search
-
-
 class UserDelete:
     def __init__(self, id: int):
         self.id = id
