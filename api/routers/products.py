@@ -38,6 +38,17 @@ async def create_fake_categories():
         return Response(success=False, error=str(e))
 
 
+@router_products.post("/products/fake/")
+async def create_fake_products():
+    try:
+        db = Crud()
+        response = db.create_fake_products()
+        if response:
+            return response
+    except Exception as e:
+        return Response(success=False, error=str(e))
+
+
 @router_products.get("/products/")
 async def search_products(
     offset: int,

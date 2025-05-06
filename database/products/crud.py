@@ -84,6 +84,34 @@ class Crud:
         except Exception as e:
             return Response(success=False, error=str(e))
 
+    def create_fake_products(self):
+        try:
+            fake = Faker()
+
+            for _ in range(20):
+                product_name = fake.word().capitalize() + " " + fake.word()
+                stock = fake.random_int(min=5, max=100)
+                reference = fake.bothify(
+                    text="???-####"
+                )  # Formato de referencia con letras y números
+                category_id = fake.random_int(min=4, max=10)  # Categorías del 4 al 10
+                price = fake.pydecimal(left_digits=3, right_digits=2, positive=True)
+                supplier_id = fake.random_int(min=4, max=10)  # Proveedores del 4 al 10
+
+                product = Product(
+                    name=product_name,
+                    stock=stock,
+                    reference=reference,
+                    category_id=category_id,
+                    price=price,
+                    supplier_id=supplier_id,
+                )
+                self.create_product(data=product)
+
+            return Response(success=True)
+        except Exception as e:
+            return Response(success=False, error=str(e))
+
     def create_product(self, data: Product):
         try:
             with self.connection.conn() as conn:
@@ -125,8 +153,8 @@ class Crud:
         VALID_COLS = {"name", "stock", "category_id"}
         VALID_ORDERS = {"ASC", "DESC"}
 
-        column if column in VALID_COLS else "id"
-        order_direction if order_direction in VALID_ORDERS else "ASC"
+        column = column if column in VALID_COLS else "id"
+        order_direction = order_direction if order_direction in VALID_ORDERS else "ASC"
 
         order_clause = f"ORDER BY {column} {order_direction}"
 
@@ -145,15 +173,13 @@ class Crud:
                     rows = cur.fetchall()
 
                     if rows:
-                        query_total_rows = f"""
+                        query_total_rows = """
                         SELECT COUNT(*)
                         FROM public.products
                         WHERE name ILIKE %s OR reference ILIKE %s
-                        {order_clause}
-                        LIMIT %s OFFSET %s
                         """
-                        cur.execute(query_total_rows)
-                        total = cur.fecthone()[0]
+                        cur.execute(query_total_rows, (like_pattern, like_pattern))
+                        total = cur.fetchone()[0]
                         page = offset // limit + 1
 
                         return Response(
