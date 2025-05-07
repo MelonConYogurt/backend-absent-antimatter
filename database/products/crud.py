@@ -91,12 +91,10 @@ class Crud:
             for _ in range(20):
                 product_name = fake.word().capitalize() + " " + fake.word()
                 stock = fake.random_int(min=5, max=100)
-                reference = fake.bothify(
-                    text="???-####"
-                )  # Formato de referencia con letras y números
-                category_id = fake.random_int(min=4, max=10)  # Categorías del 4 al 10
+                reference = fake.bothify(text="???-####")
+                category_id = fake.random_int(min=4, max=10)
                 price = fake.pydecimal(left_digits=3, right_digits=2, positive=True)
-                supplier_id = fake.random_int(min=4, max=10)  # Proveedores del 4 al 10
+                supplier_id = fake.random_int(min=4, max=10)
 
                 product = Product(
                     name=product_name,
@@ -106,7 +104,10 @@ class Crud:
                     price=price,
                     supplier_id=supplier_id,
                 )
-                self.create_product(data=product)
+                response = self.create_product(data=product)
+                print(
+                    f"Product creation success: {response.success}, Product data: {product}, error: {response.error}"
+                )
 
             return Response(success=True)
         except Exception as e:
@@ -150,7 +151,17 @@ class Crud:
         search_value: str | None = None,
         column: str | None = "id",
     ):
-        VALID_COLS = {"name", "stock", "category_id"}
+        VALID_COLS = {
+            "id",
+            "name",
+            "stock",
+            "reference",
+            "category_id",
+            "price",
+            "created_at",
+            "supplier_id",
+            "active",
+        }
         VALID_ORDERS = {"ASC", "DESC"}
 
         column = column if column in VALID_COLS else "id"
