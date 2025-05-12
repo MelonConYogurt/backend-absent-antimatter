@@ -32,44 +32,57 @@ class Crud:
                 else:
                     return Response(success=True)
 
-    def search_client(self, limit: int, offset: int, search_value: str | None = None):
+    def search_client(
+        self,
+        limit: int,
+        offset: int,
+        search_value: str | None = None,
+        order_direction: str | None = "ASC",
+        column: str | None = "id",
+    ):
+
+        VALID_COLS = {"id", "name", "phone_number", "email", "active"}
+        VALID_ORDERS = {"ASC", "DESC"}
+
+        order_direction = order_direction if order_direction in VALID_ORDERS else "id"
+        column = column if column in VALID_COLS else "ASC"
+
+        order_clause = f"ORDER BY {column} {order_direction}"
+        like_pattren = f"%{search_value or ''}%"
+
         try:
             with self.connection.conn() as conn:
                 with conn.cursor() as cur:
 
-                    total_query = """
-                        SELECT COUNT(*) 
-                        FROM public.clients 
-                        WHERE name ILIKE %s OR phone_number ILIKE %s OR email ILIKE %s
-                    """
-                    cur.execute(
-                        total_query,
-                        (
-                            f"%{search_value or ''}%",
-                            f"%{search_value or ''}%",
-                            f"%{search_value or ''}%",
-                        ),
-                    )
-                    total = cur.fetchone()[0]
-
-                    query = """
-                        SELECT *
-                        FROM public.clients
-                        WHERE name ILIKE  %s OR phone_number ILIKE  %s  OR email ILIKE %s
-                        ORDER BY id ASC
-                        LIMIT %s OFFSET %s
+                    query = f"""
+                    SELECT *
+                    FROM public.clients
+                    WHERE name ILIKE  %s OR phone_number ILIKE  %s  OR email ILIKE %s
+                    {order_clause}
+                    LIMIT %s OFFSET %s
                     """
                     cur.execute(
                         query,
                         (
-                            f"%{search_value or ''}%",
-                            f"%{search_value or ''}%",
-                            f"%{search_value or ''}%",
+                            like_pattren,
+                            like_pattren,
+                            like_pattren,
                             limit,
                             offset,
                         ),
                     )
                     data = cur.fetchall()
+
+                    total = """
+                        SELECT COUNT(*) 
+                        FROM public.clients 
+                        WHERE name ILIKE %s OR phone_number ILIKE %s OR email ILIKE %s
+                        """
+                    cur.execute(
+                        total,
+                        (like_pattren, like_pattren, like_pattren),
+                    )
+                    total = cur.fetchone()[0]
 
                     if not data:
                         return Response(success=False, error="No data found.")

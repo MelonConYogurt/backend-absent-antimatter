@@ -1,10 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from api.models.users.user import (
-    UserBase,
-    UserUpdate,
-    UserDelete,
-    UserResponse,
-)
+from ..models.users.user import User
 from database.users.crud import Crud
 from models.response_model import Response
 
@@ -33,7 +28,7 @@ async def search_users(
 
 
 @router_users.post("/users/")
-async def create_user(user_data: UserBase):
+async def create_user(user_data: User):
     try:
         db = Crud()
         response = db.create_user(data=user_data)
@@ -48,7 +43,7 @@ async def create_user(user_data: UserBase):
 async def delete_user(user_id: int):
     try:
         db = Crud()
-        response = db.delete_user(data=UserDelete(id=user_id))
+        response = db.delete_user(user_id=user_id)
         if not response.success:
             raise HTTPException(status_code=400, detail=response.error)
         return response
@@ -57,7 +52,7 @@ async def delete_user(user_id: int):
 
 
 @router_users.put("/users/update/")
-async def update_user(user_data: UserUpdate):
+async def update_user(user_data: User):
     try:
         db = Crud()
         response = db.update_user(data=user_data)
@@ -69,7 +64,7 @@ async def update_user(user_data: UserUpdate):
 
 
 @router_users.patch("/users/change/state/")
-async def change_active_state(user_data: UserResponse):
+async def change_active_state(user_data: User):
     try:
         db = Crud()
         response = db.change_user_active_state(data=user_data)

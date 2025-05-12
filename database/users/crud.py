@@ -1,10 +1,5 @@
 from database.connection import Connection
-from models.user_model import (
-    UserBase,
-    UserResponse,
-    UserUpdate,
-    UserDelete,
-)
+from models.user_model import User
 from models.response_model import Response, Metadata
 from faker import Faker
 from faker_e164.providers import E164Provider
@@ -43,7 +38,7 @@ class Crud:
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
 
-    def create_user(self, data: UserBase):
+    def create_user(self, data: User):
         try:
             user_exist = self.find_user_by_email(data.email)
             if not user_exist.data:
@@ -58,7 +53,7 @@ class Crud:
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
 
-    def update_user(self, data: UserUpdate):
+    def update_user(self, data: User):
         try:
             user_exist = self.find_user_by_id(data.id)
             new_user_exist = self.find_user_by_email(data.email)
@@ -92,14 +87,14 @@ class Crud:
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
 
-    def delete_user(self, data: UserDelete):
+    def delete_user(self, user_id: int):
         try:
-            user_exist = self.find_user_by_id(data.id)
+            user_exist = self.find_user_by_id(user_id)
             if user_exist.data:
                 with self.Connection.conn() as conn:
                     with conn.cursor() as cur:
                         query = "DELETE FROM public.users WHERE id=%s"
-                        cur.execute(query, (data.id,))
+                        cur.execute(query, (user_id,))
                         return Response(
                             success=True, data="Usuario eliminado exitosamente"
                         )
@@ -141,7 +136,7 @@ class Crud:
                         total = cur.fetchone()[0]
                         page = offset // limit + 1
                         users = [
-                            UserResponse(
+                            User(
                                 id=int(element[0]),
                                 name=element[1],
                                 phone_number=element[2],
@@ -161,7 +156,7 @@ class Crud:
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
 
-    def change_user_active_state(self, data: UserResponse):
+    def change_user_active_state(self, data: User):
         try:
             user_exist = self.find_user_by_id(id=data.id)
             if not user_exist.success:
@@ -172,7 +167,7 @@ class Crud:
                         query = "UPDATE public.users set active = %s WHERE id = %s "
                         cur.execute(query, (not data.active, data.id))
                         return Response(
-                            data=UserResponse(
+                            data=User(
                                 id=data.id,
                                 name=user_exist.data[1],
                                 phone_number=user_exist.data[2],
