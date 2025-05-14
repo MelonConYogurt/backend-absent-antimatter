@@ -7,18 +7,22 @@ from models.response_model import Response
 router_users = APIRouter(tags=["Users"])
 
 
-@router_users.get("/users/search/")
+@router_users.get("/users/list-filtered/")
 async def search_users(
-    search: str | None = None,
     offset: int = 0,
-    limit: int = 100,
+    limit: int = 20,
+    order_direction: str | None = "ASC",
+    search_value: str | None = None,
+    column: str | None = "id",
 ):
     try:
         db = Crud()
         response = db.search_user(
-            search_value=search,
             offset=offset,
             limit=limit,
+            order_direction=order_direction,
+            search_value=search_value,
+            column=column,
         )
         if not response.success:
             raise HTTPException(status_code=400, detail=response.error)
@@ -27,7 +31,7 @@ async def search_users(
         return Response(success=False, error=str(e))
 
 
-@router_users.post("/users/")
+@router_users.post("/users/create/")
 async def create_user(user_data: User):
     try:
         db = Crud()
@@ -39,7 +43,7 @@ async def create_user(user_data: User):
         return Response(success=False, error=str(e))
 
 
-@router_users.delete("/users/delete/")
+@router_users.delete("/users/delete-by-id/")
 async def delete_user(user_id: int):
     try:
         db = Crud()
@@ -51,7 +55,7 @@ async def delete_user(user_id: int):
         return Response(success=False, error=str(e))
 
 
-@router_users.put("/users/update/")
+@router_users.put("/users/update-info/")
 async def update_user(user_data: User):
     try:
         db = Crud()
@@ -63,8 +67,8 @@ async def update_user(user_data: User):
         return Response(success=False, error=str(e))
 
 
-@router_users.patch("/users/change/state/")
-async def change_active_state(user_data: User):
+@router_users.patch("/users/toggle-active-state/")
+async def toggle_user_state(user_data: User):
     try:
         db = Crud()
         response = db.change_user_active_state(data=user_data)
@@ -75,7 +79,7 @@ async def change_active_state(user_data: User):
         return Response(success=False, error=str(e))
 
 
-@router_users.post("/create/fake/users/")
+@router_users.post("/users/generate-demo-users/")
 async def create_fake_users():
     try:
         db = Crud()

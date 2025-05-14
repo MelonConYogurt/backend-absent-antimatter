@@ -51,8 +51,8 @@ async def create_fake_products():
 
 @router_products.get("/products/")
 async def search_products(
-    offset: int,
-    limit: int,
+    offset: int = 0,
+    limit: int = 20,
     order_direction: str | None = "ASC",
     search_value: str | None = None,
     column: str | None = "id",

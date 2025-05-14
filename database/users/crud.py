@@ -103,39 +103,58 @@ class Crud:
             return Response(success=False, error=str(e))
 
     def search_user(
-        self, search_value: str | None = None, offset: int = 0, limit: int = 10
+        self,
+        offset: int,
+        limit: int,
+        order_direction: str | None = "ASC",
+        search_value: str | None = None,
+        column: str | None = "id",
     ):
+
+        VALID_COLS = {"id", "name", "phone_number", "email", "role", "active"}
+        VALID_ORDERS = {"ASC", "DESC"}
+
+        column = column if column in VALID_COLS else "id"
+        order_direction = order_direction if order_direction in VALID_ORDERS else "ASC"
+
         try:
             with self.Connection.conn() as conn:
                 with conn.cursor() as cur:
-                    query = """
+
+                    order_clause = f"ORDER BY {column} {order_direction}"
+                    like_pattern = f"%{search_value or ''}%"
+
+                    total = """
+                    SELECT COUNT(*) FROM public.users 
+                    WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s 
+                    """
+                    cur.execute(
+                        total,
+                        (
+                            like_pattern,
+                            like_pattern,
+                            like_pattern,
+                        ),
+                    )
+                    total = cur.fetchone()[0]
+
+                    query = f"""
                     SELECT * FROM public.users 
                     WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s 
-                    ORDER BY id ASC 
+                    {order_clause} 
                     LIMIT %s OFFSET %s
                     """
-                    search_pattern = f"%{search_value or ''}%"
+
                     cur.execute(
                         query,
-                        (search_pattern, search_pattern, search_pattern, limit, offset),
+                        (like_pattern, like_pattern, like_pattern, limit, offset),
                     )
                     data = cur.fetchall()
-                    if data:
-                        total_query = """
-                            SELECT COUNT(*) FROM public.users 
-                            WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s 
-                        """
-                        cur.execute(
-                            total_query,
-                            (
-                                search_pattern,
-                                search_pattern,
-                                search_pattern,
-                            ),
-                        )
-                        total = cur.fetchone()[0]
-                        page = offset // limit + 1
-                        users = [
+                    page = offset // limit + 1
+
+                    return Response(
+                        success=True,
+                        data=[
                             User(
                                 id=int(element[0]),
                                 name=element[1],
@@ -145,14 +164,9 @@ class Crud:
                                 role=element[5],
                             )
                             for element in data
-                        ]
-
-                        return Response(
-                            success=True,
-                            data=users,
-                            metadata=Metadata(page=page, size=limit, total=total),
-                        )
-                    return Response(success=False, error="No se encontraron usuarios")
+                        ],
+                        metadata=Metadata(page=page, size=limit, total=total),
+                    )
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
 
