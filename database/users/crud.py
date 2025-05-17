@@ -149,21 +149,21 @@ class Crud:
                         query,
                         (like_pattern, like_pattern, like_pattern, limit, offset),
                     )
-                    data = cur.fetchall()
+                    users = cur.fetchall()
                     page = offset // limit + 1
 
                     return Response(
                         success=True,
                         data=[
                             User(
-                                id=int(element[0]),
-                                name=element[1],
-                                phone_number=element[2],
-                                email=element[3],
-                                active=bool(element[4]),
-                                role=element[5],
+                                id=int(user[0]),
+                                name=user[1],
+                                phone_number=user[2],
+                                email=user[3],
+                                active=bool(user[4]),
+                                role=user[5],
                             )
-                            for element in data
+                            for user in users
                         ],
                         metadata=Metadata(page=page, size=limit, total=total),
                     )
