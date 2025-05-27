@@ -95,3 +95,63 @@ class Crud:
             return Response(success=True, data={"total": total})
         except Exception as e:
             return Response(success=False, error=str(e))
+
+    def get_sales(
+        self,
+        limit: int,
+        offset: int,
+        search_value: str | None = None,
+        order_direction: str | None = "ASC",
+        column: str | None = "id",
+    ):
+        VALID_COLS = {"id", "client_id", "user_id", "sale_date", "total"}
+        VALID_ORDERS = {"ASC", "DESC"}
+
+        order_direction if order_direction in VALID_ORDERS else "ASC"
+        column if column in VALID_COLS else "id"
+
+        order_clause = f"ORDER BY {column} {order_direction}"
+
+        try:
+            with self.connection.conn() as conn:
+                with conn.cursor() as cur:
+                    query = f"""
+                    SELECT *
+                    FROM public.sales
+                    WHERE client_id::TEXT ILIKE %s OR user_id::TEXT ILIKE %s
+                    {order_clause} 
+                    LIMIT %s OFFSET  %s
+                    """
+
+                    like_pattren = f"%{search_value or ''}%"
+
+                    cur.execute(query, (like_pattren, like_pattren, limit, offset))
+                    sales = cur.fetchall()
+
+                    query_total = """
+                                    SELECT COUNT(*)
+                                    FROM public.sales
+                                    WHERE client_id::TEXT ILIKE %s OR user_id::TEXT ILIKE %s
+                                    """
+                    cur.execute(query_total, (like_pattren, like_pattren))
+                    total = cur.fetchone()[0]
+
+                    page = offset // limit + 1
+
+                    return Response(
+                        success=True,
+                        data=[
+                            Sale(
+                                id=sale[0],
+                                client_id=sale[1],
+                                user_id=sale[2],
+                                sale_date=sale[3],
+                                total=sale[4],
+                            )
+                            for sale in sales
+                        ],
+                        metadata=Metadata(page=page, size=limit, total=total),
+                    )
+
+        except Exception as e:
+            return Response(success=False, error=str(e))
