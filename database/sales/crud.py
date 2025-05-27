@@ -1,9 +1,8 @@
 from database.connection import Connection
 from models.response_model import Response, Metadata
 from models.sale_model import Sale
-from models.sale_product import SaleProduct
+from models.sale_product import SaleProduct, Product
 from typing import List
-from faker import Faker
 
 
 class Crud:
@@ -17,8 +16,7 @@ class Crud:
                     query = "INSERT INTO public.sales (client_id, user_id, total) VALUES (%s, %s, %s) RETURNING id"
                     cur.execute(query, (data.client_id, data.user_id, data.total))
                     sale_id = cur.fetchone()[0]
-                    return Response(success=True, data={"id": sale_id})
-
+                    return Response(success=True, data=sale_id)
         except Exception as e:
             return Response(success=False, error=str(e))
 
@@ -37,19 +35,63 @@ class Crud:
         except Exception as e:
             return Response(success=False, error=str(e))
 
-    def sale_products(self, products: List[SaleProduct]):
+    def sale_product(self, product: SaleProduct):
         try:
             with self.connection.conn() as conn:
                 with conn.cursor() as cur:
-                    total = 0
+                    query_update_product_stock = (
+                        "UPDATE public.products SET stock = stock - %s WHERE id = %s"
+                    )
+                    cur.execute(
+                        query_update_product_stock, (product.quantity, product.id)
+                    )
+
+                    query_create_product_sale = "INSERT INTO public.sale_products (product_id, sale_id, quantity) VALUES (%s, %s,%s)"
+                    cur.execute(
+                        query_create_product_sale,
+                        (product.id, product.sale_id, product.quantity),
+                    )
+
+                    return Response(success=True)
+
+        except Exception as e:
+            return Response(success=False, error=str(e))
+
+    def sale_products(self, products: List[Product], client_id: int, user_id: int):
+        try:
+            total = 0
+            for product in products:
+                validation = self.validate_product(
+                    id=product.id, quantity=product.quantity
+                )
+                if validation.success:
+                    total += product.quantity * product.price
+                else:
+                    return Response(
+                        success=False,
+                        error=f"This product dosent have many stock for the sale: {product.id}",
+                    )
+
+            if total <= 0:
+                return Response(
+                    success=False, error="Total of 0, fail in some stock product"
+                )
+            else:
+                sale_id_response = self.generade_sale(
+                    data=Sale(client_id=client_id, user_id=user_id, total=total)
+                )
+
+                if sale_id_response.data is None:
+                    return Response(success=False)
+                else:
                     for product in products:
-                        validation = self.validate_product(
-                            id=product.id, quantity=product.quantity
+                        self.sale_product(
+                            product=SaleProduct(
+                                id=product.id,
+                                quantity=product.quantity,
+                                sale_id=sale_id_response.data,
+                            )
                         )
-                        if validation.success:
-                            total += product.quantity * product.price
-                        else:
-                            raise Exception
-                    return Response(success=True, data={"total": total})
+            return Response(success=True, data={"total": total})
         except Exception as e:
             return Response(success=False, error=str(e))
