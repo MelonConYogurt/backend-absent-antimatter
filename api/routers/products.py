@@ -84,7 +84,7 @@ async def delete_product(id: int):
         return Response(success=False, error=str(e))
 
 
-@router_products.patch("/product/delete/")
+@router_products.patch("/product/toggle-active-state/")
 async def toggle_product_state(id: int):
     try:
         db = Crud()
