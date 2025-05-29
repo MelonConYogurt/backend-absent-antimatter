@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from database.products.crud import Crud
 from models.response_model import Response, Metadata
+from ..models.products.product import Product
 
 router_products = APIRouter(tags=["Products"])
 
@@ -66,6 +67,39 @@ async def search_products(
             search_value=search_value,
             column=column,
         )
+        if response:
+            return response
+    except Exception as e:
+        return Response(success=False, error=str(e))
+
+
+@router_products.delete("/product/delete/")
+async def delete_product(id: int):
+    try:
+        db = Crud()
+        response = db.delete_product(id=id)
+        if response:
+            return response
+    except Exception as e:
+        return Response(success=False, error=str(e))
+
+
+@router_products.patch("/product/delete/")
+async def toggle_product_state(id: int):
+    try:
+        db = Crud()
+        response = db.toggle_active_state(id=id)
+        if response:
+            return response
+    except Exception as e:
+        return Response(success=False, error=str(e))
+
+
+@router_products.put("/product/update/")
+async def toggle_product_state(product: Product):
+    try:
+        db = Crud()
+        response = db.update_product(product=product)
         if response:
             return response
     except Exception as e:

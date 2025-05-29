@@ -6,3 +6,5 @@ class ClientBase(BaseModel):
     name: str
     email: str
     phone_number: str
+
+

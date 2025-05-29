@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from api.models.clients import *
 from database.clients.crud import Crud
 from models.response_model import Response
+from ..models.clients.client import ClientBase
 
 
 router_clients = APIRouter(tags=["Clients"])
@@ -34,6 +35,19 @@ async def search_clients(
 
 @router_clients.patch("/clients/toggle-active-state/")
 async def toggle_client_state(id: int):
+    try:
+        db = Crud()
+        response = db.toggle_active_state(id=id)
+        if not response.success:
+            raise HTTPException(status_code=404, detail=response.error)
+        else:
+            return response
+    except Exception as e:
+        return Response(error=str(e))
+
+
+@router_clients.delete("/clients/delete/")
+async def delete_client(id: int):
     try:
         db = Crud()
         response = db.delete_client(id=id)

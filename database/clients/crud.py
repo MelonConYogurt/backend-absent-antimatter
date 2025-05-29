@@ -111,16 +111,37 @@ class Crud:
                 with conn.cursor() as cur:
                     validation = self.find_client(id=id)
                     if not validation.success:
+                        return Response(success=False, error="Cliente no encontrado")
+
+                    query = "DELETE FROM public.clients WHERE id = %s RETURNING id"
+                    cur.execute(query, (id,))
+                    response = cur.fetchone()
+                    if not response:
+                        return Response(
+                            success=False, error="No se pudo eliminar el cliente"
+                        )
+                    else:
+                        return Response(
+                            success=True, data={"deleted_client_id": response[0]}
+                        )
+        except Exception as e:
+            return Response(success=False, error=str(e))
+
+    def toggle_active_state(self, id: int):
+        try:
+            with self.connection.conn() as conn:
+                with conn.cursor() as cur:
+                    validation = self.find_client(id=id)
+                    if not validation.success:
                         return Response(success=False)
                     else:
-
                         get_status_query = (
                             "SELECT active FROM public.clients WHERE id = %s"
                         )
                         cur.execute(get_status_query, (id,))
                         current_status = cur.fetchone()[0]
 
-                        query = "UPDATE public.clients SET active = %s WHERE id = %s"
+                        query = "UPDATE public.clients SET active = %s WHERE id = %s RETURNING id"
                         cur.execute(
                             query,
                             (
@@ -128,7 +149,10 @@ class Crud:
                                 id,
                             ),
                         )
-                        return Response(success=True)
+                        response = cur.fetchone()
+                        return Response(
+                            success=True, data={"toggled_client_id": response[0]}
+                        )
         except Exception as e:
             return Response(success=False, error=str(e))
 

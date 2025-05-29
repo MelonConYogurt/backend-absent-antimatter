@@ -1,6 +1,6 @@
 from database.connection import Connection
 from models.response_model import Response, Metadata
-from models.product_model import Product
+from models.product_model import Product, ProductBasic
 from models.category_model import Category
 from faker import Faker
 
@@ -214,6 +214,81 @@ class Crud:
                     else:
                         return Response(
                             success=False,
+                        )
+        except Exception as e:
+            return Response(success=False, error=str(e))
+
+    def delete_product(self, id: int):
+        try:
+            with self.connection.conn() as conn:
+                with conn.cursor() as cur:
+                    query = "DELETE FROM public.products WHERE id = %s RETURNING id"
+                    cur.execute(query, (id,))
+                    response = cur.fetchone()
+                    if not response:
+                        return Response(success=False)
+                    else:
+                        return Response(
+                            success=True, data={"deleted_product_id": response[0]}
+                        )
+
+        except Exception as e:
+            return Response(success=False, error=str(e))
+
+    def toggle_active_state(self, id: int):
+        try:
+            with self.connection.conn() as conn:
+                with conn.cursor() as cur:
+                    query = """
+                        UPDATE public.products
+                        SET active = NOT active
+                        WHERE id = %s
+                        RETURNING id;
+                    """
+                    cur.execute(query, (id,))
+                    response = cur.fetchone()
+                    if not response:
+                        return Response(success=False)
+                    else:
+                        return Response(
+                            success=True, data={"toggled_product_id": response[0]}
+                        )
+        except Exception as e:
+            return Response(success=False, error=str(e))
+
+    def update_product(self, product: ProductBasic):
+        try:
+            with self.connection.conn() as conn:
+                with conn.cursor() as cur:
+                    query = """
+                        UPDATE public.products
+                        SET name = %s,
+                            stock = %s,
+                            reference = %s,
+                            category_id = %s,
+                            price = %s,
+                            supplier_id = %s
+                        WHERE id = %s
+                        RETURNING id;
+                    """
+                    cur.execute(
+                        query,
+                        (
+                            product.name,
+                            product.stock,
+                            product.reference,
+                            product.category_id,
+                            product.price,
+                            product.supplier_id,
+                            product.id,
+                        ),
+                    )
+                    response = cur.fetchone()
+                    if not response:
+                        return Response(success=False)
+                    else:
+                        return Response(
+                            success=True, data={"updated_product_id": response[0]}
                         )
         except Exception as e:
             return Response(success=False, error=str(e))
