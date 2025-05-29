@@ -56,34 +56,29 @@ class Crud:
     def update_user(self, data: User):
         try:
             user_exist = self.find_user_by_id(data.id)
-            new_user_exist = self.find_user_by_email(data.email)
             if not user_exist.success:
                 return Response(
                     success=False,
                     error="Usuario no encontrado",
                 )
-            elif not new_user_exist.success:
-                with self.Connection.conn() as conn:
-                    with conn.cursor() as cur:
-                        query = "UPDATE public.users set name=%s, phone_number=%s, email=%s, role=%s WHERE id =%s"
-                        cur.execute(
-                            query,
-                            (
-                                data.name,
-                                data.phone_number,
-                                data.email,
-                                data.role,
-                                data.id,
-                            ),
-                        )
-                        return Response(
-                            success=True, data="Usuario actualizado exitosamente"
-                        )
-            else:
-                return Response(
-                    success=False,
-                    error="Usuario con email repetido, el nuevo email ya existe",
-                )
+
+            with self.Connection.conn() as conn:
+                with conn.cursor() as cur:
+                    query = "UPDATE public.users set name=%s, phone_number=%s, email=%s, role=%s WHERE id =%s"
+                    cur.execute(
+                        query,
+                        (
+                            data.name,
+                            data.phone_number,
+                            data.email,
+                            data.role,
+                            data.id,
+                        ),
+                    )
+                    return Response(
+                        success=True, data="Usuario actualizado exitosamente"
+                    )
+      
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
 
