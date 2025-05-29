@@ -45,3 +45,17 @@ async def get_sales(
             raise HTTPException(status_code=400, detail=response.error or "Sale failed")
     except Exception as e:
         return Response(success=False, error=str(e))
+
+
+@router_sales.delete("/sales/delete/")
+async def delete_sale(id:int):
+    try:
+        db = Crud()
+        response = db.delete_sale(id=id)
+        
+        if response.success:
+            return response
+        else:
+            raise HTTPException(status_code=400, detail=response.error or "Sale failed")
+    except Exception as e:
+        return Response(success=False, error=str(e))

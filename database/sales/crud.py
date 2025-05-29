@@ -155,3 +155,20 @@ class Crud:
 
         except Exception as e:
             return Response(success=False, error=str(e))
+
+    def delete_sale(self, id: int):
+        try:
+            with self.connection.conn() as conn:
+                with conn.cursor() as cur:
+                    query = "DELETE FROM public.sales WHERE id = %s RETURNING id"
+                    cur.execute(query, (id,))
+                    response = cur.fetchone()
+                    if not response:
+                        return Response(success=False)
+                    else:
+                        return Response(
+                            success=True, data={"sale_id_delete:": response[0]}
+                        )
+
+        except Exception as e:
+            return Response(success=False, error=str(e))
