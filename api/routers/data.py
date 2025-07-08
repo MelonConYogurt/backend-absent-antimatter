@@ -1,27 +1,69 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from database.data.crud import Crud
 
 router_data = APIRouter(tags=["Data"])
 
 
-@router_data.get("/sale/today")
-async def sales_today():
+@router_data.get("/sales/today")
+async def get_daily_sales_total():
     try:
         db =  Crud()
         response = db.sales_today()
-        if response:
+        if response.success:
             return response
+        else:
+            raise HTTPException(status_code=404, detail='No sales data found for today')
+    except HTTPException:
+        raise
     except Exception as e:
-        return e
+        raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}')
     
 
-@router_data.get("/sale/especific")
-async def sales_especific_day(date: str):
+@router_data.get("/sales/by-date")
+async def get_sales_total_by_date(date: str):
     try:
+        if not date:
+            raise HTTPException(status_code=400, detail='Date parameter is required')
+        
         db =  Crud()
         response = db.sales_by_date(target_date=date)
-        if response:
+        if response.success:
             return response
+        else:
+            raise HTTPException(status_code=404, detail=f'No sales data found for date: {date}')
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f'Invalid date format: {str(e)}')
     except Exception as e:
-        return e
+        raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}')
 
+
+@router_data.get("/sales/monthly")
+async def get_monthly_sales_total():
+    try:
+        db =  Crud()
+        response = db.sales_by_month()
+        if response.success:
+            return response
+        else:
+            raise HTTPException(status_code=404, detail='No monthly sales data found')
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}')
+
+
+@router_data.get("/products/best-selling")
+async def get_top_selling_products():
+    try:
+        db = Crud()
+        response = db.top_10_best_selling_products()
+        if response.success:
+            return response
+        else:
+            raise HTTPException(status_code=404, detail='No best-selling products data found')
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}')

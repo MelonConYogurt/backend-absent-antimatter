@@ -8,7 +8,7 @@ from models.sale_product import Product
 from typing import List
 from faker import Faker
 import random
-from ..models.products.sale_products import SaleProduct, Sale
+from ..models.products.sale_products import SaleProduct
 
 router_sales = APIRouter(tags=["Sales"])
 fake = Faker()
