@@ -46,19 +46,23 @@ class Crud:
         except Exception as e:
             return Response(success=False, error=str(e))
     
-    def sales_by_month(self):
+    def sales_by_month(self, input_date: str | None = None):
         try:
             with self.connection.conn() as conn:
                 with conn.cursor() as cur:
                     
                     today = date.today()
                     year = today.year
-                    month = today.month
-
+                    month = today.month 
+                    
+                    if input_date:
+                        target_date = datetime.strptime(input_date, '%Y-%m-%d').date()
                         
+                        year = target_date.year
+                        month = target_date.month
+                    
                     first_day_of_month = datetime(year, month, 1).date()
                     last_day_of_month = datetime(year, month, calendar.monthrange(year, month)[1]).date()
-                    
                     
                     query = "SELECT SUM(total) AS total_sales FROM public.sales WHERE sale_date::date BETWEEN %s AND %s"
                     cur.execute(query, (first_day_of_month, last_day_of_month))
@@ -71,7 +75,7 @@ class Crud:
                         
                         return Response(success=True, data=total_sales_per_range)
         except Exception as e:
-                return Response(success=False, error=str(e))
+            return Response(success=False, error=str(e))
     
     def top_10_best_selling_products(self):
         try:
@@ -108,5 +112,28 @@ class Crud:
                             top_products.append(product_data)
                         
                         return Response(success=True, data=top_products)
+        except Exception as e:
+            return Response(success=False, error=str(e))
+    
+    def total_inventory_value(self):
+        try:
+            with self.connection.conn() as conn:
+                with conn.cursor() as cur:
+                    
+                    query = """
+                    SELECT SUM(price * stock) AS total_inventario
+                    FROM public.products
+                    WHERE stock > 0 AND price > 0 AND active = true
+                    """
+                    
+                    cur.execute(query)
+                    response = cur.fetchone()
+                    
+                    if response[0] is None:
+                        return Response(success=False, error="No se encontraron productos en inventario")
+                    else:
+                        total_inventory = response[0]
+                        
+                        return Response(success=True, data=total_inventory)
         except Exception as e:
             return Response(success=False, error=str(e))
