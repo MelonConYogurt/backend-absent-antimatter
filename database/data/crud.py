@@ -38,7 +38,7 @@ class Crud:
                     response = cur.fetchone()
                     
                     if response[0] is None:
-                        return Response(success=False, error=f"No se encontraron ventas para la fecha {target_date}")
+                        return Response(success=True, error=f"No se encontraron ventas para la fecha {target_date}", data=0)
                     else:
                         total_sales_per_date = response[0]
                         
