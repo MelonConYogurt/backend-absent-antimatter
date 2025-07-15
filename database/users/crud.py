@@ -78,7 +78,7 @@ class Crud:
                     return Response(
                         success=True, data="Usuario actualizado exitosamente"
                     )
-      
+
         except psycopg2.Error as e:
             return Response(success=False, error=str(e))
 
@@ -121,11 +121,12 @@ class Crud:
 
                     total = """
                     SELECT COUNT(*) FROM public.users 
-                    WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s 
+                    WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s OR id::text ILIKE %s
                     """
                     cur.execute(
                         total,
                         (
+                            like_pattern,
                             like_pattern,
                             like_pattern,
                             like_pattern,
@@ -135,14 +136,21 @@ class Crud:
 
                     query = f"""
                     SELECT * FROM public.users 
-                    WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s 
+                    WHERE name ILIKE %s OR email ILIKE %s OR phone_number ILIKE %s OR id::text ILIKE %s 
                     {order_clause} 
                     LIMIT %s OFFSET %s
                     """
 
                     cur.execute(
                         query,
-                        (like_pattern, like_pattern, like_pattern, limit, offset),
+                        (
+                            like_pattern,
+                            like_pattern,
+                            like_pattern,
+                            like_pattern,
+                            limit,
+                            offset,
+                        ),
                     )
                     users = cur.fetchall()
                     page = offset // limit + 1

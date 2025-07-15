@@ -57,13 +57,14 @@ class Crud:
                     query = f"""
                     SELECT *
                     FROM public.clients
-                    WHERE name ILIKE  %s OR phone_number ILIKE  %s  OR email ILIKE %s
+                    WHERE name ILIKE  %s OR phone_number ILIKE  %s  OR email ILIKE %s OR id::text ILIKE %s
                     {order_clause}
                     LIMIT %s OFFSET %s
                     """
                     cur.execute(
                         query,
                         (
+                            like_pattren,
                             like_pattren,
                             like_pattren,
                             like_pattren,
