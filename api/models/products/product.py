@@ -9,3 +9,4 @@ class Product(BaseModel):
     category_id: int
     price: float
     supplier_id: int
+

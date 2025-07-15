@@ -81,3 +81,18 @@ async def get_total_inventory_value():
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}')
+    
+    
+@router_data.get("/products/low-stock")
+async def get_low_stock_products():
+    try:
+        db = Crud()
+        response = db.get_products_in_low_stock()
+        if response.success:
+            return response
+        else:
+            raise HTTPException(status_code=404, detail='No products` data found')
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}')
