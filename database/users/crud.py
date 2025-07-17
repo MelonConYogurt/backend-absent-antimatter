@@ -1,14 +1,48 @@
 from database.connection import Connection
-from models.user_model import User
+from models.user_model import User, UserAuthentication
 from models.response_model import Response, Metadata
 from faker import Faker
 from faker_e164.providers import E164Provider
+from passlib.context import CryptContext
 import psycopg2
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class Crud:
     def __init__(self):
         self.Connection = Connection()
+
+    def verify_password(self, plain_password, hashed_password):
+        return pwd_context.verify(plain_password, hashed_password)
+
+    def get_password_hash(self, password):
+        return pwd_context.hash(password)
+
+    def get_user_by_username_password(self, email: str):
+        try:
+            query = "SELECT * FROM PUBLIC.users WHERE email = %s"
+            with self.Connection.conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query, (email,))
+                    data = cur.fetchone()
+                    if data:
+                        return Response(
+                            data=UserAuthentication(
+                                id=data[0],
+                                name=data[1],
+                                phone_number=data[2],
+                                email=data[3],
+                                disabled=bool(data[4]),
+                                role=data[5],
+                                hashed_password=data[6],
+                            ),
+                            success=True,
+                        )
+                    else:
+                        return Response(success=False)
+        except psycopg2.Error as e:
+            return Response(success=False, error=str(e))
 
     def find_user_by_id(self, id: int):
         try:
@@ -39,6 +73,7 @@ class Crud:
             return Response(success=False, error=str(e))
 
     def create_user(self, data: User):
+
         try:
             user_exist = self.find_user_by_email(data.email)
             if not user_exist.data:
