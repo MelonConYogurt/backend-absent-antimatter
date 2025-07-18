@@ -33,7 +33,7 @@ class Crud:
                                 name=data[1],
                                 phone_number=data[2],
                                 email=data[3],
-                                disabled=bool(data[4]),
+                                disabled=not bool(data[4]),
                                 role=data[5],
                                 hashed_password=data[6],
                             ),

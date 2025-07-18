@@ -8,10 +8,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import users, client, products, suppliers, sales, data
-from .models.security.security import Token, TokenData, User, UserInDB
+from .models.security.security import Token, TokenData, User
 from dotenv import load_dotenv
-
-# from ..database.users.crud import Crud as CrudUsers
 from database.users.crud import Crud as CrudUsers
 
 app = FastAPI()
